@@ -37,7 +37,8 @@ bool FileNameValidator::contains_invalid_character(
 {
     for (const auto& c: file_name)
     {
-        if (!std::iswprint(c) || forbidden_characters.contains(c))
+        if (!std::iswprint(c) || forbidden_characters.contains(c)
+            || (static_cast<wint_t>(c) == 0))
         {
             return true;
         }
@@ -52,10 +53,11 @@ bool FileNameValidator::contains_invalid_character(
  * @return true if the file name ends with a period (dot) or space.
  * @return false otherwise.
  */
-bool FileNameValidator::ends_with_space_or_period(
+bool FileNameValidator::ends_with_space_period_or_null(
     const std::wstring_view& file_name)
 {
-    return std::wstring_view {L" ."}.contains(file_name.back());
+    const auto c {file_name.back()};
+    return !file_name.empty() && ((c == L'.') || (c == L' ') || (c == 0));
 }
 
 /**
@@ -114,7 +116,7 @@ bool FileNameValidator::is_valid(const std::wstring_view& file_name)
         }
     }
 
-    return !ends_with_space_or_period(file_name);
+    return !ends_with_space_period_or_null(file_name);
 }
 
 /**
@@ -148,7 +150,7 @@ bool FileNameValidator::try_fixing_name(
         file_name.replace(start, start + 1, replacement);
     }
 
-    while (!file_name.empty() && ends_with_space_or_period(file_name))
+    while (ends_with_space_period_or_null(file_name))
     {
         file_name.pop_back();
     }

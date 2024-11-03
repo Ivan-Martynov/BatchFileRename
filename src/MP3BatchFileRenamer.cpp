@@ -4,6 +4,7 @@
 #include "StringHelper.h"
 
 #include <iostream>
+#include <cwctype>
 
 namespace Marvin
 {
@@ -13,7 +14,11 @@ void MP3BatchFileRenamer::m_process_options()
     for (size_t i {0}; i < m_options.size(); ++i)
     {
         const auto& option {m_options[i]};
-        if ((option == "-ut") || (option == "-use-title"))
+        if ((option == "-v") || (option == "-verbose"))
+        {
+            m_verbose = true;
+        }
+        else if ((option == "-ut") || (option == "-use-title"))
         {
             m_target = std::to_underlying(Target::TITLE);
         }
@@ -81,6 +86,7 @@ void MP3BatchFileRenamer::m_process_items(const std::string_view& path)
         const auto file_path {item.get_path()};
 
         std::wcout << L"Processing item " << file_path << L"\n";
+
         std::wstring modified_name {L""};
         // item.show_frames();
         if (m_target & std::to_underlying(Target::TITLE))
@@ -104,9 +110,27 @@ void MP3BatchFileRenamer::m_process_items(const std::string_view& path)
             continue;
         }
 
+        constexpr bool keep_num_prefix {true};
+        std::wstring num_prefix{};
+        if (keep_num_prefix)
+        {
+            for (const auto c : file_path.filename().wstring())
+            {
+                if (std::iswdigit(c) || (c == L'_'))
+                {
+                    num_prefix.push_back(c);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+
         std::filesystem::path new_path {
             file_path.parent_path()
-            / (modified_name + file_path.extension().wstring())};
+            / (num_prefix + modified_name + file_path.extension().wstring())};
 
         if (m_verbose)
         {
